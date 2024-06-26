@@ -1,13 +1,33 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/go-chi/chi"
+	"github.com/go-chi/cors"
 )
+
+type Users struct {
+	Username string `json:"username"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
+	Role     string `json:"role"`
+}
 
 func (app *Application) routes() http.Handler {
 	r := chi.NewRouter()
+
+	cors := cors.New(cors.Options{
+		AllowedOrigins:   []string{"*"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		AllowCredentials: true,
+		MaxAge:           300,
+	})
+
+	r.Use(cors.Handler)
 
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Lock"))
@@ -34,18 +54,26 @@ func (app *Application) routes() http.Handler {
 			return
 		}
 
-		username := r.FormValue("Username")
-		email := r.FormValue("Email")
-		password := r.FormValue("Password")
-		role := r.FormValue("role")
+		var data Users
 
-		if username == "" || email == "" || password == "" || role == "" {
-			http.Error(w, "Missing required form values", http.StatusBadRequest)
+		err = json.NewDecoder(r.Body).Decode(&data)
+		if err != nil {
+			fmt.Print("error json ")
 			return
 		}
 
-		_, err = stmt.Exec(username, email, password, role)
+		fmt.Println("asdasd")
+		// if username == "" || email == "" || password == "" {
+
+		// 	fmt.Println("ooooooooooooooooooooo")
+		// 	http.Error(w, "Missing required form values", http.StatusBadRequest)
+		// 	return
+		// }
+
+		_, err = stmt.Exec(data.Username, data.Email, data.Password, data.Role)
 		if err != nil {
+			fmt.Println("asdasdasdsd")
+			fmt.Println(err.Error())
 			app.errHandlerhttp(w, err)
 			return
 		}
